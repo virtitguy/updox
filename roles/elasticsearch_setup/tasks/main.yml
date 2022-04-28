@@ -177,6 +177,24 @@
     msg: "{{result}}"
   tags: elasticsearch_setup
 
+# Get enrollment token to use with kibana systems
+- name: Get enrollment token
+  shell: /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
+  register: enrollment_token
+  when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
+  tags: elasticsearch_setup, kibana_token
+
+- name: save token for kibana
+  copy:
+    dest: files/{{elasticsearch_cluster_name}}_kibana_token
+    content: "{{ enrollment_token.stdout }}"
+    mode: 0440
+    owner: root
+    group: root
+  delegate_to: localhost
+  when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
+  tags: elasticsearch_setup, kibana_token
+
 # This preps us to rewrite the elasticsearch.yml file without the cluster boot strap info
 - name: set is_new_cluster to false
   set_fact:
@@ -193,20 +211,3 @@
   meta: flush_handlers
   tags: elasticsearch_setup
 
-# Get enrollment token to use with kibana systems
-- name: Get enrollment token
-  shell: /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
-  register: enrollment_token
-  when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
-  tags: elasticsearch_setup
-
-- name: save token for kibana
-  copy:
-    dest: files/{{elasticsearch_cluster_name}}_kibana_token
-    content: "{{ enrollment_token.stdout }}"
-    mode: 0440
-    owner: root
-    group: root
-  delegate_to: localhost
-  when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
-  tags: elasticsearch_setup
