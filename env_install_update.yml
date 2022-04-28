@@ -16,6 +16,8 @@
 
 - hosts: kibana   # <-- name of ansible hosts group containing the kibana servers
   become: true
+  vars:
+    new_kibana_node: true # <-- ALERT!!! Set this!!!
   roles:
     - kibana_setup
   tags: kibana_setup
