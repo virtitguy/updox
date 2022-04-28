@@ -12,16 +12,3 @@
     delete_list: []
   roles: 
     - deploy
-#  tasks:
-#    - name: let LXD settle
-#      wait_for:
-#        timeout: 15
-
-# - hosts: "{{ groups[ this_group ] }}"
-#  gather_facts: true
-#  become: true
-#  vars:
-#    group_conts: "{{ groups[ this_group ] }}"
-#  roles:
-#    - etchosts
-
