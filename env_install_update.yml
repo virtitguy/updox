@@ -8,8 +8,8 @@
 - hosts: elasticsearch   # <-- name of ansible hosts group containing the elasticsearch servers
   become: true
   vars:
+    is_new_cluster: true # <-- ALERT!!! Set this to false if you are not building a new cluster!!! 
     force_reinstall: false
-    su_passwords: []
   roles: 
     - elasticsearch_setup
   tags: elasticsearch_setup
@@ -17,20 +17,20 @@
 - hosts: kibana   # <-- name of ansible hosts group containing the kibana servers
   become: true
   vars:
-    new_kibana_node: true # <-- ALERT!!! Set this!!!
+    new_kibana_node: true # <-- ALERT!!! Set this if you are not setting up a new node!!!
   roles:
     - kibana_setup
   tags: kibana_setup
   
 - hosts: nginx   # <-- name of ansible hosts group containing the nginx servers
   become: true
-  tasks: 
-    - name: Install nginx 
-      apt:
-        name:
-          - nginx
-          - filebeat
-        state: present
-        update_cache: true
-        cache_valid_time: 21600
+  roles: 
+    - nginx_setup
   tags: nginx_setup
+
+- hosts: updox  # <-- name of all hosts group
+  become: true
+  tasks:
+  roles: 
+    - filebeat_setup
+  tags: filebeat_setup

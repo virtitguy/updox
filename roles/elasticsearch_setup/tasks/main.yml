@@ -114,12 +114,7 @@
   shell: awk '/superuser is :/{a=$NF}END{print a}' /var/log/apt/term.log  # <-- last instance of (should probably do something with this log file)
   register: supasswd
   when: is_new_cluster == true
-  tags: elasticsearch_setup,test
-
-- name: echo
-  debug: 
-    msg: "|{{supasswd.stdout}}|"
-  tags: test
+  tags: elasticsearch_setup
 
 - name: save su password
   copy:
@@ -130,7 +125,7 @@
     group: root
   delegate_to: localhost
   when: is_new_cluster == true
-  tags: elasticsearch_setup, test
+  tags: elasticsearch_setup
 
 - name: Include write_elasticsearch.yml
   include_tasks:
@@ -147,11 +142,27 @@
   poll: "{{cluster_join_poll_seconds}}"
   when: ansible_hostname == groups[ 'elasticsearch' ][0]
   register: result
-  tags: elasticsearch_setup, test
+  tags: elasticsearch_setup
 
 - name: cluster joined
   debug:
     msg: "{{result}}"
+  tags: elasticsearch_setup
+- name: setup  
+  setup:
+  tags: elasticsearch_setup
+
+- name: get http fingerprint
+  shell: "openssl x509 -fingerprint -sha256 -in /etc/elasticsearch/certs/http_ca.crt|awk -F '=' '/Fingerprint/ {print $2}'"
+  register: fingerprint
+  when: ansible_hostname == groups[ 'elasticsearch' ][0]
+  tags: elasticsearch_setup
+
+- name: write fingerprint to file
+  copy:
+    dest: 'files/es_http_fingerprint'
+    content: "{{fingerprint.stdout}}"
+  delegate_to: localhost
   tags: elasticsearch_setup
 
 # Get enrollment token to use with kibana systems

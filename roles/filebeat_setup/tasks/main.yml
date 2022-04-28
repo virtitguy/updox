@@ -1,11 +1,30 @@
 ---
 # tasks file for filebeat_setup
 
-- name: Install filebeat 
-  apt:
-    name:
-      - filebeat
-    state: present
-    update_cache: true
-    cache_valid_time: 21600
-  tags: install_filebeat
+- name: create filebeat keystore
+  shell: | 
+    [ -e /var/lib/filebeat/filebeat.keystore ] || /usr/bin/filebeat keystore create
+  tags: filebeat_setup
+
+- name: create filebeat keystore key
+  shell: "echo '{{lookup('file','files/els1_supass')}}' | /usr/bin/filebeat keystore add ES_PWD --stdin --force"
+  tags: filebeat_setup
+
+- name: create filebeat keystore key
+  shell: "echo '{{lookup('file','files/es_http_fingerprint')}}' | /usr/bin/filebeat keystore add ES_FINGERPRINT --stdin --force"
+  tags: filebeat_setup  
+
+- name: enable filebeat modules
+  shell: filebeat modules enable nginx elasticsearch kibana system
+  tags: filebeat_setup  
+  
+- name: template the config file 
+  template:
+    dest: /etc/filebeat/filebeat.yml
+    src: templates/filebeat.yml.j2
+    owner: root
+    group: root
+    mode: 
+  tags: filebeat_setup
+
+  
