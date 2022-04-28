@@ -1,0 +1,16 @@
+---
+# tasks file for kibana_setup
+
+- name: Install env deps
+  include_tasks: 
+   file: tasks/env_wide_deps.yml  
+
+- name: Install kibana 
+  apt:
+    name:
+      - kibana
+      - filebeat
+    state: present
+    update_cache: true
+    cache_valid_time: 21600
+  tags: kibana_setup

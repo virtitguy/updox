@@ -1,0 +1,9 @@
+---
+# handlers file for elasticsearch_setup
+
+- name: elasticsearch_restart
+  service:
+    name: elasticsearch
+    state: restarted
+    enabled: yes
+

@@ -1,0 +1,6 @@
+---
+- name: Get container list
+  command:
+    "/snap/bin/lxc list -c n -f csv"
+  delegate_to: "{{ master_lxd }}"
+  register: container_list

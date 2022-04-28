@@ -1,0 +1,26 @@
+---
+# tasks file for deploy
+# for command line deletion
+#
+# --extra-vars='{"delete_list": [server1,server2]}
+
+  - name: Look for reset flag
+    set_fact:
+      delete_list: "{{ groups[ this_group ] }}"
+    when: reset == "true"
+
+  - name: delete list is
+    debug:
+      msg: "{{delete_list}}"
+
+  - name: template out the deploy.yml file
+    template:
+      src: templates/deploydelete.yml.j2
+      dest: "tasks/{{this_group}}-deploydelete.yml"
+      mode: 0660
+      owner: craig
+      group: craig
+
+  - name: run deploydelete.yml
+    include_tasks:
+      file: "tasks/{{this_group}}-deploydelete.yml"

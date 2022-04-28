@@ -1,0 +1,14 @@
+{% for item in group_conts %}
+    - name: Create a started container
+      community.general.lxd_container:
+        name: "{{ item }}"
+        state: stopped
+        source:
+          type: image
+          alias: "{{ hostvars[item].use_alias }}"
+        profiles: "{{ hostvars[item].use_profile }}"
+        wait_for_ipv4_addresses: true
+        timeout: 600
+        target: "{{ hostvars[item].cont_host }}"
+{% endfor %}
+

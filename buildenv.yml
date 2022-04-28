@@ -1,0 +1,27 @@
+---
+# Manages the deployments of an environment based on group names in the ansible hosts file
+# --extra-vars="this_group<GROUP_NAME>"
+# --extra-vars='{"delete_list": [server1,server2]}
+
+- hosts: localhost
+  gather_facts: true
+  become: true
+  vars:
+    group_conts: "{{ groups[ this_group ] }}"
+    reset: fasle
+    delete_list: []
+  roles: 
+    - deploy
+#  tasks:
+#    - name: let LXD settle
+#      wait_for:
+#        timeout: 15
+
+# - hosts: "{{ groups[ this_group ] }}"
+#  gather_facts: true
+#  become: true
+#  vars:
+#    group_conts: "{{ groups[ this_group ] }}"
+#  roles:
+#    - etchosts
+

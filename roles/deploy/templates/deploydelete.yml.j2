@@ -1,0 +1,28 @@
+
+  - name: Get container list
+    include_tasks:
+      file: get_container_list.yml 
+
+{% for item in delete_list %}
+  - name: Delete container {{ item }}
+    command:
+      "/snap/bin/lxc delete --force {{ item }}"
+    delegate_to: {{ hostvars[item].cont_host }}
+    when: container_list.stdout.find( '{{ item }}' )
+    
+{% endfor %}
+
+{% if delete_list|length %}
+  - name: Get container list
+    include_tasks:
+      file: get_container_list.yml 
+{% endif %}
+    
+{% for item in group_conts %}
+  - name: Create and launch a container named {{ item }}
+    command:
+      "/snap/bin/lxc launch {{ hostvars[item].use_alias }} {{ item }} -p {{ hostvars[item].use_profile }} --target {{ hostvars[item].cont_host }}"
+    delegate_to: {{ hostvars[item].cont_host }}
+    when: container_list.stdout.find( '{{ item }}' ) == -1
+
+{% endfor %}

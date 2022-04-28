@@ -1,0 +1,13 @@
+---
+# This writes out the elasticsearch.yml file on each host.
+# It is seperated so we can run it twice in the event of a cluster bootstrap. 
+
+- name: Template the elasticsearch.yml file
+  template:
+    src: templates/elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml
+    mode: 0660
+    owner: root
+    group: elasticsearch
+  notify: elasticsearch_restart
+  tags: elasticsearch_setup

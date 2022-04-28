@@ -1,0 +1,23 @@
+
+- name: Install deps
+  package:
+    name:
+      - apt-utils
+      - curl
+    state: present
+    update_cache: true
+    cache_valid_time: 21600
+  tags: install_env_deps
+
+- name: Add apt key.
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+  tags: install_env_deps,install_apt_sources
+
+- name: Add apt repository.
+  apt_repository:
+    repo: 'deb https://artifacts.elastic.co/packages/8.x/apt stable main'
+    state: present
+    update_cache: true
+  tags: install_env_deps,install_apt_sources

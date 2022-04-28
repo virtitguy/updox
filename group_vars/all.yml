@@ -1,0 +1,11 @@
+---
+is_new_cluster: true # <-- ALERT!!! Set this!!! 
+env_nameserver: 192.168.2.1
+elasticsearch_cluster_name: updox
+elasticsearch_http_port: 9200
+elasticsearch_transport_port: 9300
+Xms_memory_amount: 256m
+Xmx_memory_amount: 256m
+cluster_join_wait_seconds: 120
+cluster_join_poll_seconds: 10
+master_node: "{{groups['elasticsearch'][0]}}"
