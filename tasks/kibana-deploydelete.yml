@@ -1,0 +1,28 @@
+
+  - name: Get container list
+    include_tasks:
+      file: get_container_list.yml 
+
+  - name: Delete container kib1
+    command:
+      "/snap/bin/lxc delete --force kib1"
+    delegate_to: smallfry
+    when: container_list.stdout.find( 'kib1' )
+    
+
+  - name: Get container list
+    include_tasks:
+      file: get_container_list.yml 
+    
+  - name: Create and launch a container named kib1
+    command:
+      "/snap/bin/lxc launch updoxos kib1 -p updox --target smallfry"
+    delegate_to: smallfry
+    when: container_list.stdout.find( 'kib1' ) == -1
+
+  - name: Create and launch a container named kib2
+    command:
+      "/snap/bin/lxc launch updoxos kib2 -p updox --target smallfry"
+    delegate_to: smallfry
+    when: container_list.stdout.find( 'kib2' ) == -1
+

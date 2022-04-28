@@ -20,7 +20,7 @@
 - name: Install env deps
   include_tasks: 
     file: tasks/env_wide_deps.yml
-  tags: elasticsearch_setup
+  tags: elasticsearch_setup, env_deps
 
 - name: Install Elasticsearch 
   apt:
@@ -131,26 +131,6 @@
   delegate_to: localhost
   when: is_new_cluster == true
   tags: elasticsearch_setup, test
-
-# Needed for name resolution in my lab - quick fix
-- name: Rewrite /etc/hosts
-  lineinfile: 
-    dest: /etc/hosts
-    regexp: '127.0.1.1'
-    line: "{{hostvars[ansible_hostname].ansible_facts.eth0.ipv4.address}} {{hostvars[ansible_hostname].ansible_facts.hostname}}"
-    state: present
-  when: is_new_cluster == true
-  tags: elasticsearch_setup
-
-# Needed for name resolution in my lab - quick fix
-- name: Rewrite /etc/resolv.conf
-  lineinfile: 
-    dest: /etc/resolv.conf
-    regexp: 'nameserver'
-    line: "nameserver {{env_nameserver}}"
-    state: present
-  when: is_new_cluster == true
-  tags: elasticsearch_setup
 
 - name: Include write_elasticsearch.yml
   include_tasks:

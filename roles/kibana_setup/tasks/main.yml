@@ -1,9 +1,13 @@
 ---
 # tasks file for kibana_setup
+- name: setup
+  setup:
+  tags: kibana_setup, env_deps
 
 - name: Install env deps
   include_tasks: 
-   file: tasks/env_wide_deps.yml  
+    file: tasks/env_wide_deps.yml  
+  tags: kibana_setup, env_deps
 
 - name: Install kibana 
   apt:
@@ -14,3 +18,21 @@
     update_cache: true
     cache_valid_time: 21600
   tags: kibana_setup
+
+- name: enroll in elasticsearch cluster
+  shell: /usr/share/kibana/bin/kibana-setup --enrollment-token "{{lookup('file','files/{{elasticsearch_cluster_name}}_kibana_token')}}"
+  register: enrollment_result
+  when: is_new_cluster == true
+  tags: kibana_setup
+
+- name: enrollment result
+  debug:
+    msg: "{{enrollment_result.stdout}}"
+  tags: kibana_setup
+  when: is_new_cluster == true
+
+- name: Start kibana
+  service:
+    name: kibana
+    state: started
+    enabled: true
