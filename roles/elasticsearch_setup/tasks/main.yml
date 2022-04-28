@@ -1,8 +1,5 @@
 ---
 # tasks file for elasticsearch_setup
-- name: setup
-  setup:
-  tags: test
 
 # We don't want to overwrite a working cluster
 - name: check if elasticesearch is already installed
@@ -182,7 +179,7 @@
   shell: /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
   register: enrollment_token
   when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
-  tags: elasticsearch_setup, kibana_token
+  tags: elasticsearch_setup
 
 - name: save token for kibana
   copy:
@@ -193,7 +190,7 @@
     group: root
   delegate_to: localhost
   when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
-  tags: elasticsearch_setup, kibana_token
+  tags: elasticsearch_setup
 
 # This preps us to rewrite the elasticsearch.yml file without the cluster boot strap info
 - name: set is_new_cluster to false
