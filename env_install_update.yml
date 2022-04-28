@@ -23,10 +23,6 @@
 - hosts: nginx   # <-- name of ansible hosts group containing the nginx servers
   become: true
   tasks: 
-    - name: Install env deps
-      include_tasks: 
-        file: tasks/env_wide_deps.yml
-    
     - name: Install nginx 
       apt:
         name:
@@ -35,4 +31,4 @@
         state: present
         update_cache: true
         cache_valid_time: 21600
-      tags: nginx_setup
+  tags: nginx_setup
