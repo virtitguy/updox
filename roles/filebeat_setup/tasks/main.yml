@@ -6,15 +6,15 @@
     [ -e /var/lib/filebeat/filebeat.keystore ] || /usr/bin/filebeat keystore create
   tags: filebeat_setup
 
-- name: create filebeat keystore key
+- name: create filebeat keystore key - ES_PWD
   shell: "echo '{{lookup('file','files/els1_supass')}}' | /usr/bin/filebeat keystore add ES_PWD --stdin --force"
   tags: filebeat_setup
 
-- name: create filebeat keystore key
+- name: create filebeat keystore key - fingerprint
   shell: "echo '{{lookup('file','files/es_http_fingerprint')}}' | /usr/bin/filebeat keystore add ES_FINGERPRINT --stdin --force"
   tags: filebeat_setup  
 
-- name: enable filebeat modules
+- name: enable filebeat modules nginx elasticsearch kibana system
   shell: filebeat modules enable nginx elasticsearch kibana system
   tags: filebeat_setup  
   
@@ -25,6 +25,11 @@
     owner: root
     group: root
     mode: 
-  tags: filebeat_setup
+  tags: filebeat_setup, temp
 
-  
+- name: Restart filebeat
+  service:
+    name: filebeat
+    state: restarted
+    enabled: true
+  tags: filebeat_setup, temp
