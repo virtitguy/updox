@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Testing commands
-# ./mklogs && TOTAL_LOGS=$(ls -l logs|wc -l) && ./delete_indices.py && echo "Total logs before: ${TOTAL_LOGS}" && echo "Total logs after: $(ls -l logs|wc -l)" 
+# ./mklogs && TOTAL_LOGS=$(ls logs|wc -l) && ./delete_indices.py && echo "Total logs before: ${TOTAL_LOGS}" && echo "Total logs after: $(ls logs|wc -l)" 
 #
 
 from os import listdir, remove
