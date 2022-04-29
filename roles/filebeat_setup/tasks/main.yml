@@ -25,11 +25,11 @@
     owner: root
     group: root
     mode: 
-  tags: filebeat_setup, temp
+  tags: filebeat_setup
 
 - name: Restart filebeat
   service:
     name: filebeat
     state: restarted
     enabled: true
-  tags: filebeat_setup, temp
+  tags: filebeat_setup
