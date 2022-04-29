@@ -1,7 +1,8 @@
 ---
 # Manages the deployments of an environment based on group names in the ansible hosts file
-# --extra-vars="this_group<GROUP_NAME>"
+# --extra-vars="this_group<GROUP_NAME>" to call out group to act on
 # --extra-vars='{"delete_list": [server1,server2]}
+# -- extra-vars='reset=true' to delete all hosts and rebuild
 
 - hosts: localhost
   gather_facts: true
