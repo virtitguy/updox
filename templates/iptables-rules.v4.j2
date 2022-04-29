@@ -1,0 +1,36 @@
+*filter
+:INPUT DROP
+:FORWARD DROP
+# Debatable whether to drop all and implicitly accept
+:OUTPUT ACCEPT
+#
+:TCP - 
+:UDP -
+# local loop back allowed
+-A INPUT -i lo -j ACCEPT
+-A OUTPUT -o lo -j ACCEPT
+# Input statemetns for all hosts
+-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -m conntrack --ctstate INVALID -j DROP
+-A INPUT -p udp -m conntrack --ctstate NEW -j UDP
+-A INPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -m conntrack --ctstate NEW -j TCP
+-A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+{% if ansible_host in groups['kibana'] %}
+# Input statemetns for kibana hosts
+-A INPUT -p tcp --dport {{kibana_port}} -j ACCEPT
+{% endif %}
+#
+{% if ansible_host in groups['elasticsearch'] %}
+# Input statemetns for elasticsearch hosts hosts
+-A INPUT -p tcp --dport {{elasticsearch_transport_port}} -j ACCEPT
+-A INPUT -p tcp --dport {{elasticsearch_http_port}}
+{% endif %}
+#
+{% if ansible_host in groups['nginx'] %}
+# Input statemetns for nginx hosts
+-A INPUT -p tcp --dport {{nginx_http_port}}
+-A INPUT -p tcp --dport {{nginx_https_port}}
+{% endif %}
+COMMIT

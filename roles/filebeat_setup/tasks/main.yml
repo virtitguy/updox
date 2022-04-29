@@ -1,22 +1,22 @@
 ---
-# tasks file for filebeat_setup
+# tasks file for fb_setup
 
 - name: create filebeat keystore
   shell: | 
     [ -e /var/lib/filebeat/filebeat.keystore ] || /usr/bin/filebeat keystore create
-  tags: filebeat_setup
+  tags: fb_setup
 
 - name: create filebeat keystore key - ES_PWD
   shell: "echo '{{lookup('file','files/els1_supass')}}' | /usr/bin/filebeat keystore add ES_PWD --stdin --force"
-  tags: filebeat_setup
+  tags: fb_setup
 
 - name: create filebeat keystore key - fingerprint
   shell: "echo '{{lookup('file','files/es_http_fingerprint')}}' | /usr/bin/filebeat keystore add ES_FINGERPRINT --stdin --force"
-  tags: filebeat_setup  
+  tags: fb_setup  
 
 - name: enable filebeat modules nginx elasticsearch kibana system
   shell: filebeat modules enable nginx elasticsearch kibana system
-  tags: filebeat_setup  
+  tags: fb_setup  
   
 - name: template the config file 
   template:
@@ -25,11 +25,11 @@
     owner: root
     group: root
     mode: 
-  tags: filebeat_setup
+  tags: fb_setup
 
 - name: Restart filebeat
   service:
     name: filebeat
     state: restarted
     enabled: true
-  tags: filebeat_setup
+  tags: fb_setup

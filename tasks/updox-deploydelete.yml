@@ -3,39 +3,92 @@
     include_tasks:
       file: get_container_list.yml 
 
+  - name: Delete container els1
+    command:
+      "/snap/bin/lxc delete --force els1"
+    delegate_to: macmini
+    when: container_list.stdout.find( 'els1' )
+    
+  - name: Delete container els2
+    command:
+      "/snap/bin/lxc delete --force els2"
+    delegate_to: macmini
+    when: container_list.stdout.find( 'els2' )
+    
+  - name: Delete container els3
+    command:
+      "/snap/bin/lxc delete --force els3"
+    delegate_to: macmini
+    when: container_list.stdout.find( 'els3' )
+    
+  - name: Delete container kib1
+    command:
+      "/snap/bin/lxc delete --force kib1"
+    delegate_to: smallfry
+    when: container_list.stdout.find( 'kib1' )
+    
+  - name: Delete container kib2
+    command:
+      "/snap/bin/lxc delete --force kib2"
+    delegate_to: smallfry
+    when: container_list.stdout.find( 'kib2' )
+    
+  - name: Delete container ngnx1
+    command:
+      "/snap/bin/lxc delete --force ngnx1"
+    delegate_to: smallfry
+    when: container_list.stdout.find( 'ngnx1' )
+    
+  - name: Delete container ngnx2
+    command:
+      "/snap/bin/lxc delete --force ngnx2"
+    delegate_to: macmini
+    when: container_list.stdout.find( 'ngnx2' )
+    
+
+  - name: Get container list
+    include_tasks:
+      file: get_container_list.yml 
     
   - name: Create and launch a container named els1
     command:
       "/snap/bin/lxc launch updoxos els1 -p updox --target macmini"
     delegate_to: macmini
     when: container_list.stdout.find( 'els1' ) == -1
+
   - name: Create and launch a container named els2
     command:
       "/snap/bin/lxc launch updoxos els2 -p updox --target macmini"
     delegate_to: macmini
     when: container_list.stdout.find( 'els2' ) == -1
+
   - name: Create and launch a container named els3
     command:
       "/snap/bin/lxc launch updoxos els3 -p updox --target macmini"
     delegate_to: macmini
     when: container_list.stdout.find( 'els3' ) == -1
+
   - name: Create and launch a container named kib1
     command:
       "/snap/bin/lxc launch updoxos kib1 -p updox --target smallfry"
     delegate_to: smallfry
     when: container_list.stdout.find( 'kib1' ) == -1
+
   - name: Create and launch a container named kib2
     command:
       "/snap/bin/lxc launch updoxos kib2 -p updox --target smallfry"
     delegate_to: smallfry
     when: container_list.stdout.find( 'kib2' ) == -1
+
   - name: Create and launch a container named ngnx1
     command:
       "/snap/bin/lxc launch updoxos ngnx1 -p updox --target smallfry"
     delegate_to: smallfry
     when: container_list.stdout.find( 'ngnx1' ) == -1
+
   - name: Create and launch a container named ngnx2
     command:
       "/snap/bin/lxc launch updoxos ngnx2 -p updox --target macmini"
     delegate_to: macmini
     when: container_list.stdout.find( 'ngnx2' ) == -1
+

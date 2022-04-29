@@ -1,13 +1,10 @@
 ---
 # tasks file for nginx_setup
 
-- name: 
-  setup:
-
 - name: Install env deps
   include_tasks: 
     file: tasks/env_wide_deps.yml  
-  tags: nginx_setup, env_deps
+  tags: env_deps
 
 - name: Install nginx 
   apt:
@@ -17,5 +14,5 @@
     state: present
     update_cache: true
     cache_valid_time: 21600
-  tags: nginx_setup
+
 

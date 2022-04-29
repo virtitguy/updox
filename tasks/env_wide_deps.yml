@@ -1,8 +1,5 @@
 ---
 # tasks for the env
-- name: setup
-  setup:
-  tags: env_deps, ealsticsearch_setup, kibana_setup, nginx_setup
 
 # Needed for name resolution in my lab - quick fix
 - name: Rewrite /etc/hosts
@@ -11,7 +8,7 @@
     regexp: '127.0.1.1'
     line: "{{hostvars[ansible_hostname].ansible_facts.eth0.ipv4.address}} {{hostvars[ansible_hostname].ansible_facts.hostname}}"
     state: present
-  tags: env_deps, ealsticsearch_setup, kibana_setup, nginx_setup
+  tags: env_deps
   
 # Needed for name resolution in my lab - quick fix
 - name: Rewrite /etc/resolv.conf
@@ -20,28 +17,47 @@
     regexp: 'nameserver'
     line: "nameserver {{env_nameserver}}"
     state: present
-  tags: env_deps, ealsticsearch_setup, kibana_setup, nginx_setup
+  tags: env_deps
 
 - name: Install deps
   package:
     name:
       - apt-utils
       - curl
+      - wget
+      - iptables
+      - iptables-persistent
     state: present
     update_cache: true
     cache_valid_time: 21600
-  tags: env_deps, ealsticsearch_setup, kibana_setup, nginx_setup
+  tags: env_deps
 
 - name: Add apt key.
   apt_key:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
     state: present
-  tags: env_deps,install_apt_sources, ealsticsearch_setup, kibana_setup
+  tags: env_deps
 
 - name: Add apt repository.
   apt_repository:
     repo: 'deb https://artifacts.elastic.co/packages/8.x/apt stable main'
     state: present
     update_cache: true
-  tags: env_deps,install_apt_sources, ealsticsearch_setup, kibana_setup
+  tags: env_deps
 
+- name: template iptables v4
+  template:
+    src: templates/iptables-rules.v4.j2
+    dest: /etc/iptables/rules.v4
+    mode: 0644 # <-- according to the install! 
+    owner: root
+    group: root
+  tags: env_deps, iptables, ip6tables 
+
+- name: reload iptables
+  community.general.iptables_state:
+    state: restored
+    path: /etc/iptables/rules.v4
+  async: 10
+  poll: 0
+  tags: env_deps, iptables, ip6tables 
