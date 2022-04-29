@@ -163,6 +163,7 @@
     dest: 'files/es_http_fingerprint'
     content: "{{fingerprint.stdout}}"
   delegate_to: localhost
+  when: ansible_hostname == groups[ 'elasticsearch' ][0]
   tags: elasticsearch_setup
 
 # Get enrollment token to use with kibana systems
