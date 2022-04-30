@@ -5,6 +5,10 @@
 # !!! it is in the group_vars/all.yml file
 #
 
+# To rerun deps for this group, for instance, to apply new FW rules
+# ansible-playbook env_install_update.yml --limit elasticsearch -e force_reinstall=true -e is_new_cluster=false -t env_deps 
+# or other tags
+
 - hosts: elasticsearch   # <-- name of ansible hosts group containing the elasticsearch servers
   become: true
   vars:
@@ -12,7 +16,6 @@
     force_reinstall: false
   roles: 
     - elasticsearch_setup
-#    - filebeat_setup
   tags: env_deps, iptables, ip6tables
 
 - hosts: kibana   # <-- name of ansible hosts group containing the kibana servers
@@ -21,12 +24,10 @@
     new_kibana_node: true # <-- ALERT!!! Set this if you are not setting up a new node!!!
   roles:
     - kibana_setup
-#    - filebeat_setup
   tags: env_deps, iptables, ip6tables
   
 - hosts: nginx   # <-- name of ansible hosts group containing the nginx servers
   become: true
   roles: 
-    - nginx_setup
-#    - filebeat_setup  
+    - nginx_setup 
   tags: env_deps, iptables, ip6tables

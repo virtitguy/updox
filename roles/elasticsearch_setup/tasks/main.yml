@@ -20,7 +20,7 @@
 - name: Install env deps
   include_tasks: 
     file: tasks/env_wide_deps.yml
-  tags: elasticsearch_setup, env_deps
+  tags: env_deps
 
 - name: Install Elasticsearch 
   apt:
@@ -30,10 +30,10 @@
     state: present
     update_cache: true
     cache_valid_time: 21600
-  tags: elasticsearch_setup
+  tags: env_deps
 
 # I need this for my home lab
-- name: write jvm.options
+- name: write jvm.options for heap sizing
   copy:
     dest: /etc/elasticsearch/jvm.options.d/jvm.options
     content: |
@@ -43,17 +43,17 @@
     owner: root 
     group: elasticsearch
   notify: elasticsearch_restart
-  tags: elasticsearch_setup
+  tags: env_deps
 
 - name: create transport CA
   shell: "/usr/share/elasticsearch/bin/elasticsearch-certutil ca --out /etc/elasticsearch/certs/{{elasticsearch_cluster_name}}-ca.p12 --pass ''"
   when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
-  tags: elasticsearch_setup
-
+  tags: create_transport_ca, redo_certs
+  
 - name: create transport cert
   shell: "/usr/share/elasticsearch/bin/elasticsearch-certutil cert -ca /etc/elasticsearch/certs/{{elasticsearch_cluster_name}}-ca.p12 --ca-pass '' --out /etc/elasticsearch/certs/{{elasticsearch_cluster_name}}.p12 --pass '' "
   when: ansible_hostname == groups[ 'elasticsearch' ][0]  and is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: create_transport_cert, redo_certs
 
 - name: get security files from first node
   fetch: src={{item}} dest=files/ flat=yes
@@ -61,7 +61,7 @@
     - /etc/elasticsearch/certs/{{elasticsearch_cluster_name}}-ca.p12
     - /etc/elasticsearch/certs/{{elasticsearch_cluster_name}}.p12
   when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
-  tags: elasticsearch_setup and is_new_cluster
+  tags: redo_certs
 
 - name: copy transport cert file to other hosts
   copy:
@@ -71,7 +71,7 @@
     - "{{elasticsearch_cluster_name}}-ca.p12"
     - "{{elasticsearch_cluster_name}}.p12"
   when: ansible_hostname != groups[ 'elasticsearch' ][0] and is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: copy_certs, redo_certs
 
 - name: fix perms on certs
   file:
@@ -82,39 +82,39 @@
   loop:
     - "updox-ca.p12"
     - "updox.p12"
-  tags: elasticsearch_setup
+  tags: cert_perms, redo_certs
 
 - name: create new keystore pass
   shell: "echo ''|/usr/share/elasticsearch/bin/elasticsearch-keystore passwd"
   when: is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: redo_keystore
 
 - name: remove xpack.security.transport.ssl.keystore.secure_password
   shell: "/usr/share/elasticsearch/bin/elasticsearch-keystore remove xpack.security.transport.ssl.keystore.secure_password"
   when: is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: redo_keystore
 
 - name: create new xpack.security.transport.ssl.keystore.secure_password
   shell: "echo ''|/usr/share/elasticsearch/bin/elasticsearch-keystore add xpack.security.transport.ssl.keystore.secure_password --stdin"
   when: is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: redo_keystore
 
 - name: remove xpack.security.transport.ssl.truststore.secure_password
   shell: "/usr/share/elasticsearch/bin/elasticsearch-keystore remove xpack.security.transport.ssl.truststore.secure_password"
   when: is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: redo_keystore
 
 - name: create new xpack.security.transport.ssl.truststore.secure_password
   shell: "echo ''|/usr/share/elasticsearch/bin/elasticsearch-keystore add xpack.security.transport.ssl.truststore.secure_password --stdin"
   when: is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: redo_keystore
 
-# The cluster seems to choose a node's elastic user password randomly each time it is setup
+# The cluster uses the first node's password
 - name: get new superuser password
   shell: awk '/superuser is :/{a=$NF}END{print a}' /var/log/apt/term.log  # <-- last instance of (should probably do something with this log file)
   register: supasswd
   when: is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: get_su_passwd
 
 - name: save su password
   copy:
@@ -125,16 +125,16 @@
     group: root
   delegate_to: localhost
   when: is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: get_su_passwd
 
 - name: Include write_elasticsearch.yml
   include_tasks:
     file : tasks/write_elasticsearch.yml
-  tags: elasticsearch_setup
+  tags: write_elasticsearch_yml
 
 - name: restart elasticsearch to create cluster
   meta: flush_handlers
-  tags: elasticsearch_setup
+  tags: flush_handlers
 
 - name: check cluster nodes are joined
   shell:  while [ $(curl -s  --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic:{{lookup('file','files/{{ansible_hostname}}_supass')}} https://localhost:9200/_cluster/health |grep -c green) -eq 0 ];do sleep 2;done
@@ -142,7 +142,7 @@
   poll: "{{cluster_join_poll_seconds}}"
   when: ansible_hostname == groups[ 'elasticsearch' ][0]
   register: result
-  tags: elasticsearch_setup
+  tags: check_cluster_formed
 
 - name: cluster joined
   debug:
@@ -150,13 +150,13 @@
   tags: elasticsearch_setup
 - name: setup  
   setup:
-  tags: elasticsearch_setup
+  tags: check_cluster_formed
 
 - name: get http fingerprint
   shell: "openssl x509 -fingerprint -sha256 -in /etc/elasticsearch/certs/http_ca.crt|awk -F '=' '/Fingerprint/ {print $2}'"
   register: fingerprint
   when: ansible_hostname == groups[ 'elasticsearch' ][0]
-  tags: elasticsearch_setup
+  tags: get_http_fingerprint
 
 - name: write fingerprint to file
   copy:
@@ -164,39 +164,39 @@
     content: "{{fingerprint.stdout}}"
   delegate_to: localhost
   when: ansible_hostname == groups[ 'elasticsearch' ][0]
-  tags: elasticsearch_setup
+  tags: get_http_fingerprint
 
-# Get enrollment token to use with kibana systems
-- name: Get enrollment token
-  shell: /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
-  register: enrollment_token
-  when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
-  tags: elasticsearch_setup
+# # Get enrollment token to use with kibana systems
+# - name: Get enrollment token
+#   shell: /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
+#   register: enrollment_token
+#   when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
+#   tags: get_enrollment_token
 
-- name: save token for kibana
-  copy:
-    dest: files/{{elasticsearch_cluster_name}}_kibana_token
-    content: "{{ enrollment_token.stdout }}"
-    mode: 0440
-    owner: root
-    group: root
-  delegate_to: localhost
-  when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
-  tags: elasticsearch_setup
+# - name: save token for kibana
+#   copy:
+#     dest: files/{{elasticsearch_cluster_name}}_kibana_token
+#     content: "{{ enrollment_token.stdout }}"
+#     mode: 0440
+#     owner: root
+#     group: root
+#   delegate_to: localhost
+#   when: ansible_hostname == groups[ 'elasticsearch' ][0] and is_new_cluster == true
+#   tags: get_enrollment_token
 
 # This preps us to rewrite the elasticsearch.yml file without the cluster boot strap info
 - name: set is_new_cluster to false
   set_fact:
     is_new_cluster: false
   when: is_new_cluster == true
-  tags: elasticsearch_setup
+  tags: set_new_cluster_false
 
 - name: Include write_elasticsearch.yml
   include_tasks:
     file : tasks/write_elasticsearch.yml
-  tags: elasticsearch_setup
+  tags: rewrite_elasticsearch_yml
 
 - name: restart elasticsearch to create cluster
   meta: flush_handlers
-  tags: elasticsearch_setup
+  tags: rewrite_elasticsearch_yml, flush_handlers
 

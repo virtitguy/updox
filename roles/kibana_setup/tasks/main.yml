@@ -18,6 +18,7 @@
     update_cache: true
     cache_valid_time: 21600
   register: kabana_install
+  tags: kibana_install, env_deps
 
 - name: change server.host in the kibana.yml file 
   lineinfile:
@@ -26,20 +27,23 @@
     line: 'server.host: "{{hostvars[ansible_hostname].ansible_facts.eth0.ipv4.address}}"'
     state: present
   when: new_kibana_node == true
+  tags: kibana_install, env_deps
 
-- name: change server.host in the kibana.yml file 
+- name: change server.publicBaseUrl in the kibana.yml file 
   lineinfile:
     dest: /etc/kibana/kibana.yml
     regexp: '#server.publicBaseUrl: ""'
     line: 'server.publicBaseUrl: "http://{{ansible_hostname}}:{{kibana_port}}"'
     state: present
   when: new_kibana_node == true
+  tags: kibana_install, env_deps
 
 - name: Get elasticsearch enrollment token
   shell: "/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana"
   register: kibana_token
   delegate_to: "{{master_node}}"
   when: new_kibana_node == true and ansible_hostname == groups['kibana'][0]
+  tags: kibana_install
 
 - name: save token for kibana
   copy:
@@ -50,15 +54,17 @@
     group: root
   delegate_to: localhost
   when: new_kibana_node == true and ansible_hostname == groups['kibana'][0]
-
+  tags: kibana_install
+  
 - name: enroll in elasticsearch cluster
   shell: "/usr/share/kibana/bin/kibana-setup --enrollment-token {{ lookup('file','files/{{elasticsearch_cluster_name}}_kibana_token') }}"
   register: enrollment_result
   when: new_kibana_node == true 
   notify: Start kibana
+  tags: kibana_install
 
 - name: enrollment result
   debug:
     msg: "{{enrollment_result.stdout}}"
-  tags: kibana_setup
   when: new_kibana_node == true
+  tags: kibana_install
