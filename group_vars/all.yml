@@ -1,6 +1,5 @@
 ---
-is_new_cluster: true
-#new_kibana_node: true # <-- ALERT!!! Set this!!!
+is_new_cluster: false
 env_nameserver: 192.168.2.1
 elasticsearch_cluster_name: updox
 elasticsearch_http_port: 9200

@@ -9,6 +9,12 @@
 # ansible-playbook env_install_update.yml --limit elasticsearch -e force_reinstall=true -e is_new_cluster=false -t env_deps 
 # or other tags
 
+- hosts: "{{ elasticsearch_cluster_name | default('all') }}"   # <-- name of the elasticsearch cluster, applies env deps
+  become: true
+  vars:
+  roles: 
+    - install_env_deps
+
 - hosts: elasticsearch   # <-- name of ansible hosts group containing the elasticsearch servers
   become: true
   vars:

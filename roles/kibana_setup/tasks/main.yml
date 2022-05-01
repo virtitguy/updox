@@ -4,10 +4,10 @@
 #   setup:
 #   tags: kibana_setup, env_deps
 
-- name: Install env deps
-  include_tasks: 
-    file: tasks/env_wide_deps.yml  
-  tags: env_deps
+# - name: Install env deps
+#   include_tasks: 
+#     file: tasks/env_wide_deps.yml  
+#   tags: env_deps
 
 - name: Install kibana 
   apt:
@@ -60,9 +60,11 @@
   register: enrollment_result
   when: new_kibana_node == true 
   notify: 
-    - enable_kibana 
     - start_kibana
-  tags: kibana_install
+  tags: kibana_install, enroll_kibana
+
+- name: flush handlers
+  meta: flush_handlers
 
 - name: enrollment result
   debug:

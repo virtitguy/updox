@@ -1,10 +1,10 @@
 ---
 # tasks file for nginx_setup
 
-- name: Install env deps
-  include_tasks: 
-    file: tasks/env_wide_deps.yml  
-  tags: env_deps
+# - name: Install env deps
+#   include_tasks: 
+#     file: tasks/env_wide_deps.yml  
+#   tags: env_deps
 
 - name: Install nginx 
   apt:

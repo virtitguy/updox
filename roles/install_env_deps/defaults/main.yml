@@ -1,0 +1,8 @@
+---
+# defaults file for install_env_deps
+install_deps:
+  - apt-utils
+  - curl
+  - wget
+  - iptables
+  - iptables-persistent

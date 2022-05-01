@@ -13,6 +13,6 @@
 - name: start_kibana
   service:
     name: kibana
-    enabled: true
     state: started
-  tags: kibana_setup
+    enabled: true
+  tags: kibana_setup, start_kibana

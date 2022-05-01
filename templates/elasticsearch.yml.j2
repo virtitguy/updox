@@ -24,11 +24,7 @@ cluster.name: {{ elasticsearch_cluster_name }}
 #
 # I am hoping this helps peg down the "master" node during install
 node.name: {{ ansible_host }}
-{% if ansible_hostname == master_node %}
 node.roles: [data, master] 
-{% else %}
-node.roles: [data]
-{% endif %}
 
 #
 # Add custom attributes to the node:
