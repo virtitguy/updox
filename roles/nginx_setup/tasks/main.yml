@@ -8,10 +8,15 @@
 
 - name: Install nginx 
   apt:
-    name:
-      - nginx
+    name: nginx
     state: present
     update_cache: true
-    cache_valid_time: 21600
+
+- name: start nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+ 
 
 

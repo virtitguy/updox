@@ -9,6 +9,12 @@
     delegate_to: smallfry
     when: container_list.stdout.find( 'kib1' )
     
+  - name: Delete container kib2
+    command:
+      "/snap/bin/lxc delete --force kib2"
+    delegate_to: smallfry
+    when: container_list.stdout.find( 'kib2' )
+    
 
   - name: Get container list
     include_tasks:

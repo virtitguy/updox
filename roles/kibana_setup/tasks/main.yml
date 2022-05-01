@@ -1,23 +1,13 @@
 ---
 # tasks file for kibana_setup
-# - name: setup
-#   setup:
-#   tags: kibana_setup, env_deps
-
-# - name: Install env deps
-#   include_tasks: 
-#     file: tasks/env_wide_deps.yml  
-#   tags: env_deps
 
 - name: Install kibana 
-  apt:
-    name:
-      - kibana
+  package:
+    name: kibana
     state: present
     update_cache: true
-    cache_valid_time: 21600
   register: kabana_install
-  tags: kibana_install, env_deps
+  tags: kibana_install
 
 - name: change server.host in the kibana.yml file 
   lineinfile:
@@ -25,8 +15,7 @@
     regexp: '#server.host: ""'
     line: 'server.host: "{{hostvars[ansible_hostname].ansible_facts.eth0.ipv4.address}}"'
     state: present
-  when: new_kibana_node == true
-  tags: kibana_install, env_deps
+  tags: kibana_install
 
 - name: change server.publicBaseUrl in the kibana.yml file 
   lineinfile:
@@ -34,8 +23,9 @@
     regexp: '#server.publicBaseUrl: ""'
     line: 'server.publicBaseUrl: "http://{{ansible_hostname}}:{{kibana_port}}"'
     state: present
-  when: new_kibana_node == true
   tags: kibana_install, env_deps
+
+# A token is only good for 30 minutes, so we create it here to make sure we have a good token.
 
 - name: Get elasticsearch enrollment token
   shell: "/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana"
@@ -59,13 +49,16 @@
   shell: "/usr/share/kibana/bin/kibana-setup --enrollment-token {{ lookup('file','files/{{elasticsearch_cluster_name}}_kibana_token') }}"
   register: enrollment_result
   when: new_kibana_node == true 
-  notify: 
-    - start_kibana
+  ignore_errors: yes
   tags: kibana_install, enroll_kibana
 
-- name: flush handlers
-  meta: flush_handlers
-
+- name: start_kibana
+  service:
+    name: kibana
+    state: started
+    enabled: yes
+  tags: kibana_setup, start_kibana
+  
 - name: enrollment result
   debug:
     msg: "{{enrollment_result.stdout}}"

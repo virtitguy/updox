@@ -19,21 +19,6 @@
     state: present
   tags: env_deps
 
-- name: create iptables dirs
-  file:
-    path: /etc/iptables
-    state: directory
-  tags: env_deps
-  
-- name: template iptables v4
-  template:
-    src: templates/iptables-rules.v4.j2
-    dest: /etc/iptables/rules.v4
-    mode: 0644 # <-- according to the install! 
-    owner: root
-    group: root
-  tags: env_deps, iptables, ip6tables 
-
 - name: Add apt key.
   apt_key:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
@@ -49,16 +34,31 @@
 
 - name: Install deps
   package:
-    name: "{{ install_deps }}"
+    name: "{{ item }}"
     state: present
     update_cache: true
-    cache_valid_time: 21600
+  loop: "{{ install_deps }}"
   tags: env_deps
 
+- name: create iptables dirs
+  file:
+    path: /etc/iptables
+    state: directory
+  tags: env_deps
+  
+- name: template iptables v4
+  template:
+    src: templates/iptables-rules.v4.j2
+    dest: /etc/iptables/rules.v4
+    mode: 0644 # <-- according to the install! 
+    owner: root
+    group: root
+  tags: env_deps, iptables, ip6tables 
+  
 - name: reload iptables
   community.general.iptables_state:
     state: restored
     path: /etc/iptables/rules.v4
   async: 10
   poll: 0
-  tags: env_deps, iptables, ip6tables 
+  tags: env_deps, iptables

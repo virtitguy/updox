@@ -7,8 +7,14 @@
     state: restarted
     enabled: yes
 
+- name: elasticsearch_start
+  service:
+    name: elasticsearch
+    state: started
+    enabled: yes
+
 - name: elasticsearch_enable
   service: 
     name: elasticsearch
-    state: enabled
+    enabled: yes
 

@@ -2,6 +2,7 @@
 # Play to install ELK stack
 #
 # !!! BE SURE TO SET is_new_cluster TO THE CORRECT VALUE BEFORE RUNNING !!!
+# !!! BE SURE TO SET elasticsearch_cluster_name TO THE CORRECT VALUE BEFORE RUNNING !!!
 # !!! it is in the group_vars/all.yml file
 #
 
@@ -9,11 +10,14 @@
 # ansible-playbook env_install_update.yml --limit elasticsearch -e force_reinstall=true -e is_new_cluster=false -t env_deps 
 # or other tags
 
-- hosts: "{{ elasticsearch_cluster_name | default('all') }}"   # <-- name of the elasticsearch cluster, applies env deps
+# Install env deps
+
+- hosts: "{{ elasticsearch_cluster_name | default('updox') }}"   # <-- name of the elasticsearch cluster, applies env deps
   become: true
   vars:
   roles: 
     - install_env_deps
+  tags: install_env_deps
 
 - hosts: elasticsearch   # <-- name of ansible hosts group containing the elasticsearch servers
   become: true
@@ -22,6 +26,7 @@
     force_reinstall: false
   roles: 
     - elasticsearch_setup
+  tags: install_elasticsearch
   
 - hosts: kibana   # <-- name of ansible hosts group containing the kibana servers
   become: true
@@ -29,9 +34,17 @@
     new_kibana_node: true # <-- ALERT!!! Set this if you are not setting up a new node!!!
   roles:
     - kibana_setup
+  tags: install_kibana
   
 - hosts: nginx   # <-- name of ansible hosts group containing the nginx servers
   become: true
   roles: 
     - nginx_setup 
-  
+  tags: install_nginx
+
+- hosts: "{{ elasticsearch_cluster_name | default('updox') }}"   # <-- name of the elasticsearch cluster, applies env deps
+  become: true
+  vars:
+  roles: 
+    - filebeat_setup
+  tags: install_filebeat

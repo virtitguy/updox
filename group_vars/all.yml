@@ -14,3 +14,9 @@ cluster_join_poll_seconds: 10
 master_node: "{{groups['elasticsearch'][0]}}"
 elasticsearch_certutil: /usr/share/elasticsearch/bin/elasticsearch-certutil
 es_certs_dir: /etc/elasticsearch/certs
+install_deps:
+  - apt-utils
+  - curl
+  - wget
+  - iptables
+  - iptables-persistent

@@ -1,28 +1,15 @@
 ---
 # tasks file for elasticsearch_setup
 
-# Install env deps like repo, install filebest, so on
-
-# - name: Install env deps
-#   include_tasks: 
-#     file: tasks/env_wide_deps.yml
-#   tags: env_deps
-
 # Install elasticsearch
 
 - name: Install Elasticsearch 
-  apt:
-    name:
-      - elasticsearch
+  package:
+    name: elasticsearch
     state: present
     update_cache: true
     cache_valid_time: 21600
-  notify: elasticsearch_enable 
-  when: is_new_cluster is true or force_reinstall is true
-  tags: env_deps
-
-- name: flush handlers
-  meta: flush_handlers
+  tags: install_elasticsearch
 
 # I need this for my home lab to avoid OOM crashes
 
@@ -35,8 +22,7 @@
     mode: 0660
     owner: root 
     group: elasticsearch
-  notify: elasticsearch_restart
-  tags: env_deps
+  tags: env_deps, install_elasticsearch
 
 # Create new ca for transport connections. the test helps refrain from erroring out if the ca esixts on subsequent runs
 
@@ -51,7 +37,7 @@
   tags: create_transport_ca, redo_certs
   
 - name: create transport cert
-  shell: "[ -f {{es_certs_dir}}/{{elasticsearch_cluster_name}}.p12 ] ||{{elasticsearch_certutil}} cert -ca {{es_certs_dir}}/{{elasticsearch_cluster_name}}-ca.p12 --ca-pass '' --out {{es_certs_dir}}/{{elasticsearch_cluster_name}}.p12 --pass '' "
+  shell: "[ -f {{es_certs_dir}}/{{elasticsearch_cluster_name}}.p12 ] || {{elasticsearch_certutil}} cert -ca {{es_certs_dir}}/{{elasticsearch_cluster_name}}-ca.p12 --ca-pass '' --out {{es_certs_dir}}/{{elasticsearch_cluster_name}}.p12 --pass '' "
   when: ansible_hostname ==  master_node 
   tags: create_transport_cert, redo_certs
 
@@ -99,10 +85,11 @@
   tags: redo_keystore
 
 # The cluster uses the first node's password
+
 - name: get new superuser password
   shell: awk '/superuser is :/{a=$NF}END{print a}' /var/log/apt/term.log  # <-- last instance of (should probably do something with this log file)
   register: supasswd
-  when: is_new_cluster
+  when: is_new_cluster and ansible_hostname == master_node
   tags: get_su_passwd
 
 - name: save su password
@@ -113,7 +100,7 @@
     owner: root
     group: root
   delegate_to: localhost
-  when: is_new_cluster
+  when: is_new_cluster and ansible_hostname == master_node
   tags: get_su_passwd
 
 - name: Include write_elasticsearch.yml
@@ -122,10 +109,14 @@
   when: is_new_cluster
   tags: write_elasticsearch_yml
 
-- name: restart elasticsearch to create cluster
-  meta: flush_handlers
-  tags: flush_handlers
+# We need to make sure the service is running
 
+- name: start elasticsearch
+  service:
+    name: elasticsearch
+    state: started
+    enabled: yes
+    
 # I am not certain we need to check this on all ES masters
 
 - name: check cluster nodes are joined
@@ -156,6 +147,7 @@
   tags: get_http_fingerprint
 
 # This preps us to rewrite the elasticsearch.yml file without the cluster boot strap info
+
 - name: set is_new_cluster to false
   set_fact:
     is_new_cluster: "false"
@@ -171,12 +163,17 @@
   delegate_to: localhost
   tags: set_new_cluster_false
 
+# rewrite the elasticsearch.yml file without the cluster bootstrap info
+
 - name: Include write_elasticsearch.yml
   include_tasks:
     file : tasks/write_elasticsearch.yml
   tags: rewrite_elasticsearch_yml
 
-- name: restart elasticsearch to create cluster
-  meta: flush_handlers
-  tags: rewrite_elasticsearch_yml, flush_handlers
+# We need to restart elasricsearch
 
+- name: restart elasticsearch
+  service:
+    name: elasticsearch
+    state: restarted
+    enabled: yes

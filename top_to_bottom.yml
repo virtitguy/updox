@@ -1,0 +1,254 @@
+---
+
+- hosts: "{{ elasticsearch_cluster_name | default('updox') }}"  
+  become: true
+  tasks: 
+
+# Needed for name resolution in my lab - quick fix
+
+    - name: Rewrite /etc/hosts
+      lineinfile: 
+        dest: /etc/hosts
+        regexp: '127.0.1.1'
+        line: "{{hostvars[ansible_hostname].ansible_facts.eth0.ipv4.address}} {{ansible_hostname}}"
+        state: present
+      tags: env_deps
+  
+# Needed for name resolution in my lab - quick fix
+    - name: Rewrite /etc/resolv.conf
+      lineinfile: 
+        dest: /etc/resolv.conf
+        regexp: 'nameserver'
+        line: "nameserver {{env_nameserver}}"
+        state: present
+      tags: env_deps
+
+    - name: Add apt key.
+      apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+      tags: env_deps
+
+    - name: Add apt repository.
+      apt_repository:
+        repo: 'deb https://artifacts.elastic.co/packages/8.x/apt stable main'
+        state: present
+        update_cache: true
+      tags: env_deps
+
+    - name: Install deps
+      package:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      loop:  "{{ install_deps }}"
+      tags: env_deps
+
+    - name: create iptables dirs
+      file:
+        path: /etc/iptables
+        state: directory
+      tags: env_deps
+  
+    - name: template iptables v4
+      template:
+        src: templates/iptables-rules.v4.j2
+        dest: /etc/iptables/rules.v4
+        mode: 0644 # <-- according to the install! 
+        owner: root
+        group: root
+      tags: env_deps, iptables, ip6tables 
+  
+    - name: reload iptables
+      community.general.iptables_state:
+        state: restored
+        path: /etc/iptables/rules.v4
+      async: 10
+      poll: 0
+      tags: env_deps, iptables
+
+# Install elasticsearch
+
+    - name: Install Elasticsearch 
+      package:
+        name: elasticsearch
+        state: present
+        update_cache: true
+      tags: install_elasticsearch
+
+# - name: WTF?!
+#   shell: systemctl enable elasticsearch
+      
+    # - name: start elasticsearch
+    #   service:
+    #     name: elasticsearch
+    #     enabled: yes
+    #   tags: install_elasticsearch
+
+
+# I need this for my home lab to avoid OOM crashes
+
+    - name: write jvm.options for heap sizing
+      copy:
+        dest: /etc/elasticsearch/jvm.options.d/jvm.options
+        content: |
+          -Xms{{ Xms_memory_amount }}
+          -Xmx{{ Xmx_memory_amount }}
+        mode: 0660
+        owner: root 
+        group: elasticsearch
+      tags: env_deps, install_elasticsearch
+
+# Create new ca for transport connections. the test helps refrain from erroring out if the ca esixts on subsequent runs
+
+# - name: Create private key with password protection
+#   community.crypto.openssl_privatekey:
+#     path: /path/to/ca-certificate.key
+#     passphrase: ""
+
+    - name: create transport CA
+      shell: "[ -f {{es_certs_dir}}/{{elasticsearch_cluster_name}}-ca.p12 ] || {{elasticsearch_certutil}} ca --out {{es_certs_dir}}/{{elasticsearch_cluster_name}}-ca.p12 --pass ''"
+      when: ansible_hostname == master_node
+      tags: create_transport_ca, redo_certs
+      
+    - name: create transport cert
+      shell: "[ -f {{es_certs_dir}}/{{elasticsearch_cluster_name}}.p12 ] || {{elasticsearch_certutil}} cert -ca {{es_certs_dir}}/{{elasticsearch_cluster_name}}-ca.p12 --ca-pass '' --out {{es_certs_dir}}/{{elasticsearch_cluster_name}}.p12 --pass '' "
+      when: ansible_hostname ==  master_node 
+      tags: create_transport_cert, redo_certs
+
+    - name: get security files from first node
+      fetch: src={{item}} dest=files/ flat=yes
+      with_items:
+        - /etc/elasticsearch/certs/{{elasticsearch_cluster_name}}-ca.p12
+        - /etc/elasticsearch/certs/{{elasticsearch_cluster_name}}.p12
+      when: ansible_hostname == master_node and is_new_cluster
+      tags: redo_certs
+
+    - name: copy transport cert file to other hosts
+      copy:
+        src: "files/{{item}}"
+        dest: /etc/elasticsearch/certs/
+      with_items:
+        - "{{elasticsearch_cluster_name}}.p12"
+      when: ansible_hostname != master_node and is_new_cluster
+      tags: copy_certs, redo_certs
+
+    - name: fix perms on certs
+      file:
+        path: "{{es_certs_dir}}/{{item}}"
+        owner: root
+        group: elasticsearch
+        mode: 0660
+      loop:
+        - "{{elasticsearch_cluster_name}}.p12"
+      when: is_new_cluster
+      tags: cert_perms, redo_certs
+
+    - name: create new keystore pass
+      shell: "echo ''|/usr/share/elasticsearch/bin/elasticsearch-keystore passwd"
+      when: is_new_cluster
+      tags: redo_keystore
+
+    - name: create new xpack.security.transport.ssl.keystore.secure_password
+      shell: "echo ''|/usr/share/elasticsearch/bin/elasticsearch-keystore add xpack.security.transport.ssl.keystore.secure_password --stdin -f"
+      when: is_new_cluster
+      tags: redo_keystore
+
+    - name: create new xpack.security.transport.ssl.truststore.secure_password
+      shell: "echo ''|/usr/share/elasticsearch/bin/elasticsearch-keystore add xpack.security.transport.ssl.truststore.secure_password --stdin -f"
+      when: is_new_cluster
+      tags: redo_keystore
+
+# The cluster uses the first node's password
+
+    - name: get new superuser password
+      shell: awk '/superuser is :/{a=$NF}END{print a}' /var/log/apt/term.log  # <-- last instance of (should probably do something with this log file)
+      register: supasswd
+      when: is_new_cluster and ansible_hostname == master_node
+      tags: get_su_passwd
+
+    - name: save su password
+      copy:
+        dest: files/{{ansible_hostname}}_supass
+        content: "{{ supasswd.stdout }}"
+        mode: 0440
+        owner: root
+        group: root
+      delegate_to: localhost
+      when: is_new_cluster and ansible_hostname == master_node
+      tags: get_su_passwd
+
+    - name: Include write_elasticsearch.yml
+      include_tasks:
+        file : tasks/write_elasticsearch.yml
+      when: is_new_cluster
+      tags: write_elasticsearch_yml
+
+# We need to make sure the service is running
+
+    - name: start elasticsearch
+      service:
+        name: elasticsearch
+        state: started
+        enabled: yes
+    
+# I am not certain we need to check this on all ES masters
+
+    - name: check cluster nodes are joined
+      shell:  while [ $(curl -s  --cacert {{es_certs_dir}}/http_ca.crt -u elastic:{{lookup('file','files/{{ansible_hostname}}_supass')}} https://localhost:9200/_cluster/health |grep -c green) -eq 0 ];do sleep 2;done
+      async: "{{cluster_join_async_seconds}}"
+      poll: "{{cluster_join_poll_seconds}}"
+      register: result
+      when: ansible_hostname == master_node
+      tags: check_cluster_formed
+
+    - name: cluster joined
+      debug:
+        msg: "{{result}}"
+      tags: check_cluster_formed
+
+    - name: get http fingerprint
+      shell: "openssl x509 -fingerprint -sha256 -in {{es_certs_dir}}/http_ca.crt|awk -F '=' '/Fingerprint/ {print $2}'"
+      register: fingerprint
+      when: ansible_hostname == master_node
+      tags: get_http_fingerprint
+
+    - name: write fingerprint to file
+      copy:
+        dest: 'files/es_http_fingerprint'
+        content: "{{fingerprint.stdout}}"
+      delegate_to: localhost
+      when: ansible_hostname == master_node
+      tags: get_http_fingerprint
+
+# This preps us to rewrite the elasticsearch.yml file without the cluster boot strap info
+
+    - name: set is_new_cluster to false
+      set_fact:
+        is_new_cluster: "false"
+      when: is_new_cluster
+      tags: set_new_cluster_false
+
+    - name: set is_new_cluster false in all groups vars file
+      lineinfile:
+        dest: group_vars/all.yml
+        regexp: 'is_new_cluster: true'
+        line: 'is_new_cluster: false'
+        state: present
+      delegate_to: localhost
+      tags: set_new_cluster_false
+
+# rewrite the elasticsearch.yml file without the cluster bootstrap info
+
+    - name: Include write_elasticsearch.yml
+      include_tasks:
+        file : tasks/write_elasticsearch.yml
+      tags: rewrite_elasticsearch_yml
+
+# We need to restart elasricsearch
+
+    - name: restart elasticsearch
+      service:
+        name: elasticsearch
+        state: restarted
+        enabled: yes

@@ -27,12 +27,13 @@
 # Input statemetns for elasticsearch hosts hosts
 -A INPUT -p tcp --dport {{elasticsearch_transport_port}} -j ACCEPT
 -A INPUT -p udp --dport {{elasticsearch_transport_port}} -j ACCEPT
+-A INPUT -p udp --dport {{elasticsearch_transport_port}} -j ACCEPT
 -A INPUT -p tcp --dport {{elasticsearch_http_port}} -j ACCEPT
 {% endif %}
 #
 {% if ansible_host in groups['nginx'] %}
 # Input statemetns for nginx hosts
--A INPUT -p tcp --dport {{nginx_http_port}}
--A INPUT -p tcp --dport {{nginx_https_port}}
+-A INPUT -p tcp -j ACCEPT --dport {{nginx_http_port}} 
+-A INPUT -p tcp -j ACCEPT --dport {{nginx_https_port}}
 {% endif %}
 COMMIT

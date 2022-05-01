@@ -9,5 +9,4 @@
     mode: 0660
     owner: root
     group: elasticsearch
-  notify: elasticsearch_restart
   tags: write_elasticsearch_yml

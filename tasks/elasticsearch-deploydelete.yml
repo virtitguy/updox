@@ -1,0 +1,25 @@
+
+  - name: Get container list
+    include_tasks:
+      file: get_container_list.yml 
+
+
+    
+  - name: Create and launch a container named els1
+    command:
+      "/snap/bin/lxc launch updoxos els1 -p updox --target macmini"
+    delegate_to: macmini
+    when: container_list.stdout.find( 'els1' ) == -1
+
+  - name: Create and launch a container named els2
+    command:
+      "/snap/bin/lxc launch updoxos els2 -p updox --target macmini"
+    delegate_to: macmini
+    when: container_list.stdout.find( 'els2' ) == -1
+
+  - name: Create and launch a container named els3
+    command:
+      "/snap/bin/lxc launch updoxos els3 -p updox --target macmini"
+    delegate_to: macmini
+    when: container_list.stdout.find( 'els3' ) == -1
+
