@@ -18,14 +18,15 @@
 -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
 -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
 {% if ansible_host in groups['kibana'] %}
-# Input statemetns for kibana hosts
+# Input statements for kibana hosts
 -A INPUT -p tcp --dport {{kibana_port}} -j ACCEPT
 {% endif %}
 #
 {% if ansible_host in groups['elasticsearch'] %}
 # Input statemetns for elasticsearch hosts hosts
 -A INPUT -p tcp --dport {{elasticsearch_transport_port}} -j ACCEPT
--A INPUT -p tcp --dport {{elasticsearch_http_port}}
+-A INPUT -p udp --dport {{elasticsearch_transport_port}} -j ACCEPT
+-A INPUT -p tcp --dport {{elasticsearch_http_port}} -j ACCEPT
 {% endif %}
 #
 {% if ansible_host in groups['nginx'] %}

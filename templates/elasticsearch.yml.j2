@@ -22,9 +22,13 @@ cluster.name: {{ elasticsearch_cluster_name }}
 #
 # Use a descriptive name for the node:
 #
-
+# I am hoping this helps peg down the "master" node during install
 node.name: {{ ansible_host }}
+{% if ansible_hostname == master_node %}
 node.roles: [data, master] 
+{% else %}
+node.roles: [data]
+{% endif %}
 
 #
 # Add custom attributes to the node:
@@ -64,7 +68,7 @@ path.logs: /var/log/elasticsearch
 # address here to expose this node on the network:
 #
 
-#network.host: {{ hostvars[ansible_hostname].ansible_facts.eth0.ipv4.address }}
+#
 network.host: 0.0.0.0
 
 #

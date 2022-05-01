@@ -1,8 +1,18 @@
 ---
 # handlers file for kibana_setup
-- name: Start kibana
+
+# For some reason, kibana only starts some of the time and the fix is to enable it first.
+# It looks like the service file is not getting put into place during the install.
+
+- name: enable_kibana
+  service: 
+    name: kibana
+    enabled: true
+  tags: kibana_setup
+
+- name: start_kibana
   service:
     name: kibana
-    state: started
     enabled: true
+    state: started
   tags: kibana_setup

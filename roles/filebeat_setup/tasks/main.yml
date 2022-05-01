@@ -1,22 +1,44 @@
 ---
-# tasks file for fb_setup
+# tasks file for filebeat_setup
+
+- name: Add apt key.
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+  tags: filebeat_install
+
+- name: Add apt repository.
+  apt_repository:
+    repo: 'deb https://artifacts.elastic.co/packages/8.x/apt stable main'
+    state: present
+    update_cache: true
+  tags: filebeat_install
+
+- name: Install filebeat 
+  apt:
+    name:
+      - filebeat
+    state: present
+    update_cache: true
+    cache_valid_time: 21600
+  tags: env_deps, filebeat_install
 
 - name: create filebeat keystore
   shell: | 
     [ -e /var/lib/filebeat/filebeat.keystore ] || /usr/bin/filebeat keystore create
-  tags: fb_setup
+  tags: filebeat_install
 
 - name: create filebeat keystore key - ES_PWD
   shell: "echo '{{lookup('file','files/els1_supass')}}' | /usr/bin/filebeat keystore add ES_PWD --stdin --force"
-  tags: fb_setup
+  tags: filebeat_install
 
 - name: create filebeat keystore key - fingerprint
   shell: "echo '{{lookup('file','files/es_http_fingerprint')}}' | /usr/bin/filebeat keystore add ES_FINGERPRINT --stdin --force"
-  tags: fb_setup  
+  tags: filebeat_install  
 
 - name: enable filebeat modules nginx elasticsearch kibana system
   shell: filebeat modules enable nginx elasticsearch kibana system
-  tags: fb_setup  
+  tags: filebeat_install  
   
 - name: template the config file 
   template:
@@ -25,11 +47,11 @@
     owner: root
     group: root
     mode: 
-  tags: fb_setup
+  tags: filebeat_install
 
 - name: Restart filebeat
   service:
     name: filebeat
     state: restarted
     enabled: true
-  tags: fb_setup
+  tags: filebeat_install

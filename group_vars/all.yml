@@ -1,5 +1,5 @@
 ---
-is_new_cluster: true # <-- ALERT!!! Set this!!! 
+is_new_cluster: true
 #new_kibana_node: true # <-- ALERT!!! Set this!!!
 env_nameserver: 192.168.2.1
 elasticsearch_cluster_name: updox
@@ -10,6 +10,8 @@ nginx_http_port: 80
 nginx_https_port: 443
 Xms_memory_amount: 256m
 Xmx_memory_amount: 256m
-cluster_join_wait_seconds: 120
+cluster_join_async_seconds: 600
 cluster_join_poll_seconds: 10
 master_node: "{{groups['elasticsearch'][0]}}"
+elasticsearch_certutil: /usr/share/elasticsearch/bin/elasticsearch-certutil
+es_certs_dir: /etc/elasticsearch/certs

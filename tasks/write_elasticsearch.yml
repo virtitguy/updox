@@ -10,4 +10,4 @@
     owner: root
     group: elasticsearch
   notify: elasticsearch_restart
-  tags: elasticsearch_setup
+  tags: write_elasticsearch_yml

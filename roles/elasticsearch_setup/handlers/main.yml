@@ -7,3 +7,8 @@
     state: restarted
     enabled: yes
 
+- name: elasticsearch_enable
+  service: 
+    name: elasticsearch
+    state: enabled
+
