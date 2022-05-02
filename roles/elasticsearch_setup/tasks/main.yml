@@ -10,6 +10,8 @@
     update_cache: true
   tags: install_elasticsearch
 
+# I am not ure why this is needed.
+
 - name: enable ES
   shell: systemctl enable elasticsearch
 
