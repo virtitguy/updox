@@ -44,7 +44,7 @@
   file:
     path: /etc/iptables
     state: directory
-  tags: env_deps
+  tags: env_deps, fw_rules
   
 - name: template iptables v4
   template:
@@ -53,12 +53,12 @@
     mode: 0644 # <-- according to the install! 
     owner: root
     group: root
-  tags: env_deps, iptables, ip6tables 
+  tags: env_deps, fw_rules 
   
-# - name: reload iptables
-#   community.general.iptables_state:
-#     state: restored
-#     path: /etc/iptables/rules.v4
-#   async: 10
-#   poll: 0
-#   tags: env_deps, iptables
+- name: reload iptables
+  community.general.iptables_state:
+    state: restored
+    path: /etc/iptables/rules.v4
+  async: 10
+  poll: 0
+  tags: env_deps, fw_rules

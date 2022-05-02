@@ -1,7 +1,7 @@
 galaxy_info:
-  author: your name
-  description: your role description
-  company: your company (optional)
+  author: Craig Cowen
+  description: Manage the build and tear down of containers in the LXC cluster
+  company: Virtualitguy Home Lab
 
   # If the issue tracker for your role is not on github, uncomment the
   # next line and provide a value
@@ -38,6 +38,12 @@ galaxy_info:
   #   - 1.0
   #   - 7
   #   - 99.99
+
+  platforms:
+  - name: Debian
+    versions:
+    - 10
+    - 11
 
   galaxy_tags: []
     # List tags for your role here, one per line. A tag is a keyword that describes
