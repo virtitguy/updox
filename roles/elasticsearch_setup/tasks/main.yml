@@ -8,8 +8,10 @@
     name: elasticsearch
     state: present
     update_cache: true
-    cache_valid_time: 21600
   tags: install_elasticsearch
+
+- name: enable ES
+  shell: systemctl enable elasticsearch
 
 # I need this for my home lab to avoid OOM crashes
 
@@ -24,12 +26,30 @@
     group: elasticsearch
   tags: env_deps, install_elasticsearch
 
-# Create new ca for transport connections. the test helps refrain from erroring out if the ca esixts on subsequent runs
 
-# - name: Create private key with password protection
-#   community.crypto.openssl_privatekey:
-#     path: /path/to/ca-certificate.key
-#     passphrase: ""
+- name: get new superuser password
+  shell: awk '/superuser is :/{a=$NF}END{print a}' /var/log/apt/term.log  # <-- last instance of (should probably do something with this log file)
+  register: supasswd
+  when: is_new_cluster and ansible_hostname == master_node
+  tags: get_su_passwd
+
+- name: save su password
+  copy:
+    dest: files/supass
+    content: "{{ supasswd.stdout }}"
+    mode: 0440
+    owner: root
+    group: root
+  delegate_to: localhost
+  when: is_new_cluster and ansible_hostname == master_node
+  tags: get_su_passwd
+
+- name: set fect es_password
+  set_fact:
+    es_password: "{{ lookup('file','files/supass') }}"
+  tags: get_su_passwd
+
+# Create new ca for transport connections. the test helps refrain from erroring out if the ca esixts on subsequent runs
 
 - name: create transport CA
   shell: "[ -f {{es_certs_dir}}/{{elasticsearch_cluster_name}}-ca.p12 ] || {{elasticsearch_certutil}} ca --out {{es_certs_dir}}/{{elasticsearch_cluster_name}}-ca.p12 --pass ''"
@@ -86,23 +106,6 @@
 
 # The cluster uses the first node's password
 
-- name: get new superuser password
-  shell: awk '/superuser is :/{a=$NF}END{print a}' /var/log/apt/term.log  # <-- last instance of (should probably do something with this log file)
-  register: supasswd
-  when: is_new_cluster and ansible_hostname == master_node
-  tags: get_su_passwd
-
-- name: save su password
-  copy:
-    dest: files/{{ansible_hostname}}_supass
-    content: "{{ supasswd.stdout }}"
-    mode: 0440
-    owner: root
-    group: root
-  delegate_to: localhost
-  when: is_new_cluster and ansible_hostname == master_node
-  tags: get_su_passwd
-
 - name: Include write_elasticsearch.yml
   include_tasks:
     file : tasks/write_elasticsearch.yml
@@ -116,11 +119,16 @@
     name: elasticsearch
     state: started
     enabled: yes
+  tags: start_elasticsearch
+
+- name: pause for timeout
+  pause:
+    minutes: 1
     
 # I am not certain we need to check this on all ES masters
 
 - name: check cluster nodes are joined
-  shell:  while [ $(curl -s  --cacert {{es_certs_dir}}/http_ca.crt -u elastic:{{lookup('file','files/{{ansible_hostname}}_supass')}} https://localhost:9200/_cluster/health |grep -c green) -eq 0 ];do sleep 2;done
+  shell:  while [ $(curl -s  --cacert {{es_certs_dir}}/http_ca.crt -u elastic:{{es_password}} https://localhost:9200/_cluster/health |grep -c green) -eq 0 ];do sleep 2;done
   async: "{{cluster_join_async_seconds}}"
   poll: "{{cluster_join_poll_seconds}}"
   register: result
@@ -177,3 +185,4 @@
     name: elasticsearch
     state: restarted
     enabled: yes
+  tags: restart_elasticsearch

@@ -55,10 +55,10 @@
     group: root
   tags: env_deps, iptables, ip6tables 
   
-- name: reload iptables
-  community.general.iptables_state:
-    state: restored
-    path: /etc/iptables/rules.v4
-  async: 10
-  poll: 0
-  tags: env_deps, iptables
+# - name: reload iptables
+#   community.general.iptables_state:
+#     state: restored
+#     path: /etc/iptables/rules.v4
+#   async: 10
+#   poll: 0
+#   tags: env_deps, iptables

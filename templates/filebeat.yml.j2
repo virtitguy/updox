@@ -26,7 +26,8 @@ filebeat.inputs:
 
   # Paths that should be crawled and fetched. Glob based paths.
   paths:
-    - /var/log/*.log
+    - /var/log/messages
+    - /var/log/syslog
     #- c:\programdata\elasticsearch\logs\*
 
   # Exclude lines. A list of regular expressions to match. It drops the lines that are
@@ -54,7 +55,7 @@ filebeat.config.modules:
   path: ${path.config}/modules.d/*.yml
 
   # Set to true to enable config reloading
-  reload.enabled: false
+  reload.enabled: true
 
   # Period on which files under path should be checked for changes
   #reload.period: 10s

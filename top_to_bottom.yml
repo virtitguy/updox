@@ -44,29 +44,6 @@
       loop:  "{{ install_deps }}"
       tags: env_deps
 
-    - name: create iptables dirs
-      file:
-        path: /etc/iptables
-        state: directory
-      tags: env_deps
-  
-    - name: template iptables v4
-      template:
-        src: templates/iptables-rules.v4.j2
-        dest: /etc/iptables/rules.v4
-        mode: 0644 # <-- according to the install! 
-        owner: root
-        group: root
-      tags: env_deps, iptables, ip6tables 
-  
-    - name: reload iptables
-      community.general.iptables_state:
-        state: restored
-        path: /etc/iptables/rules.v4
-      async: 10
-      poll: 0
-      tags: env_deps, iptables
-
 # Install elasticsearch
 
     - name: Install Elasticsearch 
@@ -75,16 +52,6 @@
         state: present
         update_cache: true
       tags: install_elasticsearch
-
-# - name: WTF?!
-#   shell: systemctl enable elasticsearch
-      
-    # - name: start elasticsearch
-    #   service:
-    #     name: elasticsearch
-    #     enabled: yes
-    #   tags: install_elasticsearch
-
 
 # I need this for my home lab to avoid OOM crashes
 
@@ -186,6 +153,9 @@
 
 # We need to make sure the service is running
 
+    - name: enable es
+      shell: systemctl enable elasticsearch
+
     - name: start elasticsearch
       service:
         name: elasticsearch
@@ -252,3 +222,26 @@
         name: elasticsearch
         state: restarted
         enabled: yes
+
+    - name: create iptables dirs
+      file:
+        path: /etc/iptables
+        state: directory
+      tags: env_deps
+  
+    - name: template iptables v4
+      template:
+        src: templates/iptables-rules.v4.j2
+        dest: /etc/iptables/rules.v4
+        mode: 0644 # <-- according to the install! 
+        owner: root
+        group: root
+      tags: env_deps, iptables, ip6tables 
+  
+    - name: reload iptables
+      community.general.iptables_state:
+        state: restored
+        path: /etc/iptables/rules.v4
+      async: 10
+      poll: 0
+      tags: env_deps, iptables

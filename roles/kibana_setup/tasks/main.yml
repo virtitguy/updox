@@ -7,7 +7,7 @@
     state: present
     update_cache: true
   register: kabana_install
-  tags: kibana_install
+  tags: install_kibana
 
 - name: change server.host in the kibana.yml file 
   lineinfile:
@@ -15,7 +15,7 @@
     regexp: '#server.host: ""'
     line: 'server.host: "{{hostvars[ansible_hostname].ansible_facts.eth0.ipv4.address}}"'
     state: present
-  tags: kibana_install
+  tags: install_kibana
 
 - name: change server.publicBaseUrl in the kibana.yml file 
   lineinfile:
@@ -23,7 +23,7 @@
     regexp: '#server.publicBaseUrl: ""'
     line: 'server.publicBaseUrl: "http://{{ansible_hostname}}:{{kibana_port}}"'
     state: present
-  tags: kibana_install, env_deps
+  tags: install_kibana
 
 # A token is only good for 30 minutes, so we create it here to make sure we have a good token.
 
@@ -32,7 +32,7 @@
   register: kibana_token
   delegate_to: "{{master_node}}"
   when: new_kibana_node == true and ansible_hostname == groups['kibana'][0]
-  tags: kibana_install
+  tags: install_kibana, enroll_kibana
 
 - name: save token for kibana
   copy:
@@ -43,24 +43,28 @@
     group: root
   delegate_to: localhost
   when: new_kibana_node == true and ansible_hostname == groups['kibana'][0]
-  tags: kibana_install
+  tags: install_kibana, enroll_kibana
   
 - name: enroll in elasticsearch cluster
-  shell: "/usr/share/kibana/bin/kibana-setup --enrollment-token {{ lookup('file','files/{{elasticsearch_cluster_name}}_kibana_token') }}"
+  shell: "/usr/share/kibana/bin/kibana-setup --enrollment-token {{ lookup('file','files/{{elasticsearch_cluster_name}}_kibana_token') }} || echo'' "
   register: enrollment_result
   when: new_kibana_node == true 
-  ignore_errors: yes
-  tags: kibana_install, enroll_kibana
+  ignore_errors: true
+  tags: install_kibana, enroll_kibana
 
-- name: start_kibana
+- name: enable kibana  
+  shell: systemctl enable kibana
+  tags: install_kibana
+
+- name: restart_kibana
   service:
     name: kibana
-    state: started
+    state: restarted
     enabled: yes
-  tags: kibana_setup, start_kibana
-  
+  tags: kibana_setup, restart_kibana, enroll_kibana
+
 - name: enrollment result
   debug:
     msg: "{{enrollment_result.stdout}}"
   when: new_kibana_node == true
-  tags: kibana_install
+  tags: install_kibana, enroll_kibana

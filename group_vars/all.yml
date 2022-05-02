@@ -7,8 +7,8 @@ elasticsearch_transport_port: 9300
 kibana_port: 5601
 nginx_http_port: 80
 nginx_https_port: 443
-Xms_memory_amount: 256m
-Xmx_memory_amount: 256m
+Xms_memory_amount: 512m
+Xmx_memory_amount: 512m
 cluster_join_async_seconds: 600
 cluster_join_poll_seconds: 10
 master_node: "{{groups['elasticsearch'][0]}}"

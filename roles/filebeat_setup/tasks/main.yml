@@ -5,14 +5,14 @@
   apt_key:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
     state: present
-  tags: filebeat_install
+  tags: install_filebeat
 
 - name: Add apt repository.
   apt_repository:
     repo: 'deb https://artifacts.elastic.co/packages/8.x/apt stable main'
     state: present
     update_cache: true
-  tags: filebeat_install
+  tags: install_filebeat
 
 - name: Install filebeat 
   apt:
@@ -20,24 +20,24 @@
     state: present
     update_cache: true
     cache_valid_time: 21600
-  tags: env_deps, filebeat_install
+  tags: install_filebeat
 
 - name: create filebeat keystore
   shell: | 
     [ -e /var/lib/filebeat/filebeat.keystore ] || /usr/bin/filebeat keystore create
-  tags: filebeat_install
+  tags: install_filebeat
 
 - name: create filebeat keystore key - ES_PWD
-  shell: "echo '{{lookup('file','files/els1_supass')}}' | /usr/bin/filebeat keystore add ES_PWD --stdin --force"
-  tags: filebeat_install
+  shell: "echo '{{lookup('file','files/supass')}}' | /usr/bin/filebeat keystore add ES_PWD --stdin --force"
+  tags: install_filebeat
 
 - name: create filebeat keystore key - fingerprint
   shell: "echo '{{lookup('file','files/es_http_fingerprint')}}' | /usr/bin/filebeat keystore add ES_FINGERPRINT --stdin --force"
-  tags: filebeat_install  
+  tags: install_filebeat  
 
 - name: enable filebeat modules nginx elasticsearch kibana system
   shell: filebeat modules enable nginx elasticsearch kibana system
-  tags: filebeat_install  
+  tags: install_filebeat  
   
 - name: template the config file 
   template:
@@ -46,11 +46,11 @@
     owner: root
     group: root
     mode: 
-  tags: filebeat_install
+  tags: install_filebeat
 
 - name: Restart filebeat
   service:
     name: filebeat
     state: restarted
     enabled: true
-  tags: filebeat_install
+  tags: install_filebeat
