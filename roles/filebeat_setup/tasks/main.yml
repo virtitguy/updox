@@ -22,6 +22,8 @@
     cache_valid_time: 21600
   tags: install_filebeat
 
+# If the file doesn't exist, create it
+
 - name: create filebeat keystore
   shell: | 
     [ -e /var/lib/filebeat/filebeat.keystore ] || /usr/bin/filebeat keystore create
