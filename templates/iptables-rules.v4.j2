@@ -4,16 +4,13 @@
 # Debatable whether to drop all and implicitly accept
 :OUTPUT ACCEPT
 #
-#:TCP - 
-#:UDP -
+#
 # local loop back allowed
 -A INPUT -i lo -j ACCEPT
 -A OUTPUT -o lo -j ACCEPT
 # Input statemetns for all hosts
 -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 -A INPUT -m conntrack --ctstate INVALID -j DROP
-#-A INPUT -p udp -m conntrack --ctstate NEW -j UDP
-#-A INPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -m conntrack --ctstate NEW -j TCP
 -A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
 -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
 -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
